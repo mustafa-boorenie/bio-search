@@ -36,7 +36,7 @@ class CommandInput(Input):
         "/guided": "Guided analysis: /guided <EXPOSURE> <OUTCOME>",
         "/info": "Variable info: /info <VAR_NAME>",
         "/search": "Search variables: /search <query>",
-        "/export": "Export results: /export <format>",
+        "/export": "Export results: /export <csv|json|report|figures>",
         "/clear": "Clear chat",
         "/help": "Show available commands",
         "/quit": "Exit application",

@@ -36,17 +36,17 @@ Bio-Search is a terminal-native research workstation for epidemiologists and pub
 - Render results as inline table + forest plot
 
 ### 4. AI-Assisted Interpretation
-- Natural language queries processed by configurable LLM (OpenAI, Anthropic, MiniMax, Kimi, Qwen)
+- Natural language queries processed by configurable LLM (OpenAI, Anthropic, MiniMax, Kimi, Qwen, Ollama)
 - Query parser converts natural language to structured analysis specifications
 - Manuscript writer generates journal-quality sections (abstract, introduction, methods, results, discussion)
 - Falls back to keyword matching when no LLM is configured
 - Full functionality available via slash commands without any LLM
 
 ### 5. Export & Reporting
-- Plain text + Rich terminal reports
-- Export-quality charts via matplotlib/seaborn
-- Manuscript section generation
-- Planned: CSV, JSON, XLSX export
+- `/export csv` — flat CSV via StructuredExporter
+- `/export json` — JSON with metadata via StructuredExporter
+- `/export report` — plain-text summary report
+- `/export figures` — publication-quality Manhattan, volcano, and forest plots (matplotlib/seaborn)
 
 ## Technical Requirements
 
@@ -77,7 +77,7 @@ Bio-Search is a terminal-native research workstation for epidemiologists and pub
 - Full NHANES data pipeline: catalog, download, load, harmonize, cache, merge
 - Complete EWAS engine with survey-weighted regression and FDR correction
 - Guided analysis with subgroup stratification and temporal trends
-- Multi-provider LLM integration (OpenAI, Anthropic, MiniMax, Kimi, Qwen)
+- Multi-provider LLM integration (OpenAI, Anthropic, MiniMax, Kimi, Qwen, Ollama)
 - Chat-style TUI with slash commands, tab completion, and keyboard shortcuts
 - Inline Manhattan plots and forest plots via plotext
 - Clinical significance assessment with MCID thresholds for ~30 biomarkers
@@ -87,7 +87,7 @@ Bio-Search is a terminal-native research workstation for epidemiologists and pub
 - Unit tests for catalog, EWAS, effect size, multiple testing, survey weights, variable classification
 
 ### Not Yet Implemented
-- **Export functionality**: `/export` command is a placeholder — CSV, JSON, XLSX output not wired up
+- ~~**Export functionality**: `/export` command is a placeholder~~ — **Done**: CSV, JSON, report, and figures export wired up
 - **Integration tests**: `tests/integration/` directory exists but is empty
 - **Codebook module**: `data/codebook.py` exists but functionality is incomplete
 - **Structured output**: `output/structured.py` exists but needs completion

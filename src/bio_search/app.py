@@ -86,6 +86,10 @@ class BioSearchApp(App):
         # -- Working data --------------------------------------------------
         self._loaded_data: pd.DataFrame | None = None
 
+        # -- Latest analysis results (for export) -------------------------
+        self._latest_ewas_result: EWASResult | None = None
+        self._latest_guided_result: GuidedAnalysisResult | None = None
+
     # -- Lifecycle ---------------------------------------------------------
 
     def on_mount(self) -> None:
@@ -200,7 +204,9 @@ class BioSearchApp(App):
             )
 
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, _run)
+        result = await loop.run_in_executor(None, _run)
+        self._latest_ewas_result = result
+        return result
 
     async def run_guided(
         self,
@@ -233,7 +239,9 @@ class BioSearchApp(App):
             return engine.run_guided(prepared, outcome, exposure, design)
 
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, _run)
+        result = await loop.run_in_executor(None, _run)
+        self._latest_guided_result = result
+        return result
 
     # -- Data management ---------------------------------------------------
 

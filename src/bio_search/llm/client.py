@@ -2,9 +2,9 @@
 
 ``LLMClient`` centralises API-key management and provides a single
 ``generate`` method that the rest of the codebase calls.  Supports
-OpenAI, Anthropic (Claude), MiniMax, Kimi (Moonshot), and Qwen
-(DashScope).  MiniMax, Kimi, and Qwen use OpenAI-compatible APIs;
-only Anthropic requires its own SDK.
+OpenAI, Anthropic (Claude), MiniMax, Kimi (Moonshot), Qwen
+(DashScope), and Ollama (local).  MiniMax, Kimi, Qwen, and Ollama
+use OpenAI-compatible APIs; only Anthropic requires its own SDK.
 
 If no API key is configured the ``available`` property returns ``False``
 and all downstream code gracefully falls back to template-based output.
@@ -28,6 +28,10 @@ PROVIDER_DEFAULTS: dict[str, dict[str, str | None]] = {
     "qwen": {
         "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
         "model": "qwen-turbo",
+    },
+    "ollama": {
+        "base_url": "http://localhost:11434/v1",
+        "model": "llama3.2",
     },
 }
 
@@ -53,9 +57,12 @@ class LLMClient:
 
         # Resolve API key: llm_api_key takes precedence, fall back to
         # openai_api_key when provider is openai (backward compat).
+        # Ollama runs locally and needs no real API key.
         api_key = self.settings.llm_api_key
         if not api_key and self._provider == "openai":
             api_key = self.settings.openai_api_key
+        if not api_key and self._provider == "ollama":
+            api_key = "ollama"
 
         if not api_key:
             self.client = None
@@ -132,7 +139,7 @@ class LLMClient:
         temperature: float = 0.3,
         max_tokens: int = 2000,
     ) -> str:
-        """OpenAI-compatible chat completion (works for openai, minimax, kimi, qwen)."""
+        """OpenAI-compatible chat completion (works for openai, minimax, kimi, qwen, ollama)."""
         messages: list[dict[str, str]] = []
         if system:
             messages.append({"role": "system", "content": system})

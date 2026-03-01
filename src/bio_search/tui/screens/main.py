@@ -39,7 +39,6 @@ from textual.widgets import Footer, Header, Input, RichLog, Static
 
 from bio_search.tui.widgets.command_input import CommandInput
 
-
 # -- ASCII art banner (figlet "small" font, 46 chars wide) ----------------
 
 _BANNER_LINES = [
@@ -195,7 +194,7 @@ class MainScreen(Screen):
                 "[yellow]No LLM API key configured.[/yellow] "
                 "Set [bold]BIO_SEARCH_LLM_API_KEY[/bold] and optionally "
                 "[bold]BIO_SEARCH_LLM_PROVIDER[/bold] (openai, anthropic, "
-                "minimax, kimi, qwen) in your environment or .env file.\n"
+                "minimax, kimi, qwen, ollama) in your environment or .env file.\n"
                 "[dim]Legacy BIO_SEARCH_OPENAI_API_KEY also works for OpenAI.\n"
                 "You can still use slash commands — type /help.[/dim]"
             )
@@ -511,13 +510,93 @@ class MainScreen(Screen):
         log.write("[dim]Cleared.[/dim]\n")
 
     async def _export_results(self, fmt: str) -> None:
-        """Export the current results (placeholder)."""
+        """Export the latest analysis results in the requested format.
+
+        Supported formats: csv, json, report, figures.
+        """
         log = self._log()
-        log.write(f"Exporting results as [bold]{fmt}[/bold]...")
-        log.write(
-            "[yellow]Export is not yet implemented. "
-            "Supported formats will include: csv, json, xlsx.[/yellow]"
-        )
+        fmt = fmt.lower()
+
+        supported = ("csv", "json", "report", "figures")
+        if fmt not in supported:
+            log.write(
+                f"[yellow]Unknown format '{fmt}'. "
+                f"Supported: {', '.join(supported)}[/yellow]"
+            )
+            return
+
+        # Gather association results from latest EWAS or guided analysis
+        ewas_result = self.app._latest_ewas_result
+        guided_result = self.app._latest_guided_result
+
+        if ewas_result is None and guided_result is None:
+            log.write(
+                "[yellow]No results to export. "
+                "Run /ewas or /guided first.[/yellow]"
+            )
+            return
+
+        # Collect association results for CSV/JSON/figures
+        associations = []
+        if ewas_result:
+            associations.extend(ewas_result.associations)
+        if guided_result:
+            associations.append(guided_result.primary)
+            for sg_list in guided_result.subgroups.values():
+                associations.extend(sg_list)
+
+        output_dir = self.app.settings.data_dir / "output"
+
+        try:
+            if fmt == "csv":
+                from bio_search.output.structured import StructuredExporter
+
+                exporter = StructuredExporter(output_dir)
+                if ewas_result:
+                    path = exporter.ewas_to_csv(ewas_result)
+                else:
+                    path = exporter.to_csv(associations)
+                log.write(f"[green]Exported CSV: {path}[/green]")
+
+            elif fmt == "json":
+                from bio_search.output.structured import StructuredExporter
+
+                exporter = StructuredExporter(output_dir)
+                if ewas_result:
+                    path = exporter.ewas_to_json(ewas_result)
+                else:
+                    path = exporter.to_json(associations)
+                log.write(f"[green]Exported JSON: {path}[/green]")
+
+            elif fmt == "report":
+                if ewas_result is None:
+                    log.write(
+                        "[yellow]Text reports require EWAS results. "
+                        "Run /ewas first.[/yellow]"
+                    )
+                    return
+                from bio_search.output.report import ReportGenerator
+
+                gen = ReportGenerator(output_dir)
+                path = gen.save_report(ewas_result)
+                log.write(f"[green]Exported report: {path}[/green]")
+
+            elif fmt == "figures":
+                if not associations:
+                    log.write("[yellow]No associations to plot.[/yellow]")
+                    return
+                from bio_search.visualization.export import FigureExporter
+
+                fig_exp = FigureExporter(output_dir)
+                paths = []
+                paths.append(fig_exp.manhattan(associations))
+                paths.append(fig_exp.volcano(associations))
+                paths.append(fig_exp.forest(associations))
+                for p in paths:
+                    log.write(f"[green]Saved figure: {p}[/green]")
+
+        except Exception as exc:
+            log.write(f"[bold red]Export error: {exc}[/bold red]")
 
     def _get_llm_client(self):
         """Return a cached LLMClient instance."""

@@ -60,7 +60,7 @@ All settings via environment variables or `.env` file, prefixed `BIO_SEARCH_`:
 | Variable | Default | Purpose |
 |---|---|---|
 | `DATA_DIR` | `./data` | XPT files and DuckDB cache |
-| `LLM_PROVIDER` | `openai` | `openai`, `anthropic`, `minimax`, `kimi`, `qwen` |
+| `LLM_PROVIDER` | `openai` | `openai`, `anthropic`, `minimax`, `kimi`, `qwen`, `ollama` |
 | `LLM_API_KEY` | None | Universal LLM API key |
 | `LLM_MODEL` | Provider default | Override model name |
 | `LLM_BASE_URL` | None | Override API endpoint |

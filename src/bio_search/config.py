@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # -- LLM --
     openai_api_key: str | None = None  # backward compat (used when provider=openai)
-    llm_provider: str = "openai"  # openai | anthropic | minimax | kimi | qwen
+    llm_provider: str = "openai"  # openai | anthropic | minimax | kimi | qwen | ollama
     llm_api_key: str | None = None  # universal key (takes precedence over openai_api_key)
     llm_model: str | None = None  # override default model per provider
     llm_base_url: str | None = None  # override base URL (advanced)
