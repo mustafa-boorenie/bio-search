@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:wwwn.cdc.gov)",
+      "WebFetch(domain:samplics-org.github.io)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(python3:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(ruff check:*)",
+      "Bash(ruff:*)",
+      "Bash(find src:*)",
+      "Bash(gtimeout 5:*)",
+      "Bash(PYTHONPATH=/tmp/pyfiglet_tmp python3:*)",
+      "Bash(bio-search:*)"
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+/* -----------------------------------------------------------------------
+ * Bio-Search TUI -- Textual CSS
+ *
+ * Chat-style single-column layout:
+ *   [Header]
+ *   [Chat Log -- scrolling conversation]
+ *   [Completions dropdown]
+ *   [Command Input]
+ *   [Footer]
+ * ----------------------------------------------------------------------- */
+
+Screen {
+    layout: vertical;
+}
+
+#chat-log {
+    height: 1fr;
+    padding: 0 1;
+    scrollbar-size: 1 1;
+}
+
+#completions {
+    display: none;
+    height: auto;
+    max-height: 14;
+    padding: 0 1;
+    background: $surface;
+    border: solid $primary-lighten-2;
+}
+
+#command-bar {
+    height: 3;
+    border-top: solid $primary;
+    padding: 0 1;
+}
+
+Header {
+    dock: top;
+    height: 1;
+}
+
+Footer {
+    dock: bottom;
+    height: 1;
+}
