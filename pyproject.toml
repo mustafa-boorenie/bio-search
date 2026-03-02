@@ -40,7 +40,7 @@ dev = [
 ]
 
 [project.scripts]
-bio-search = "bio_search.__main__:main"
+biosearch = "bio_search.__main__:main"
 
 [tool.ruff]
 line-length = 100
