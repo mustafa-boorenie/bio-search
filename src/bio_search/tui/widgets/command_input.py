@@ -37,6 +37,7 @@ class CommandInput(Input):
         "/info": "Variable info: /info <VAR_NAME>",
         "/search": "Search variables: /search <query>",
         "/export": "Export results: /export <csv|json|report|figures>",
+        "/setup": "Configure LLM provider and API key",
         "/clear": "Clear chat",
         "/help": "Show available commands",
         "/quit": "Exit application",

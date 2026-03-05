@@ -30,6 +30,7 @@ Keyboard bindings:
 from __future__ import annotations
 
 import math
+from pathlib import Path
 
 import plotext as plt
 from rich.table import Table as RichTable
@@ -37,6 +38,7 @@ from rich.text import Text
 from textual.screen import Screen
 from textual.widgets import Footer, Header, Input, RichLog, Static
 
+from bio_search.llm.client import PROVIDER_DEFAULTS
 from bio_search.tui.widgets.command_input import CommandInput
 
 # -- ASCII art banner (figlet "small" font, 46 chars wide) ----------------
@@ -74,6 +76,9 @@ class MainScreen(Screen):
 
     def on_mount(self) -> None:
         """Show the welcome banner and focus the command input."""
+        self._setup_step: int = 0  # 0=not in setup, 1=provider, 2=api key
+        self._setup_provider: str = ""
+
         log = self.query_one("#chat-log", RichLog)
 
         # ASCII art banner
@@ -87,6 +92,14 @@ class MainScreen(Screen):
             "Type [bold]/help[/bold] for commands or "
             "press [bold]/[/bold] to see all commands.\n"
         )
+
+        # First-launch onboarding hint
+        if not Path(".env").exists():
+            log.write(
+                "[yellow]No .env file found.[/yellow] "
+                "Run [bold]/setup[/bold] to configure your LLM provider "
+                "and API key, or create a .env file manually.\n"
+            )
 
         # Focus the command input so the user can type immediately
         self.query_one("#command-bar").focus()
@@ -149,6 +162,13 @@ class MainScreen(Screen):
         cmd = event.command
         args = event.args
 
+        # If in setup flow, route raw input there (unless it's /quit)
+        if self._setup_step > 0 and cmd != "/quit":
+            raw = f"{cmd} {' '.join(args)}".strip()
+            self._echo(raw)
+            self._handle_setup_input(raw)
+            return
+
         # Echo the user input
         self._echo(f"{cmd} {' '.join(args)}".strip())
 
@@ -172,6 +192,8 @@ class MainScreen(Screen):
             self._clear_workspace()
         elif cmd == "/export" and args:
             await self._export_results(args[0])
+        elif cmd == "/setup":
+            self._setup_command()
         elif cmd == "/quit":
             self.app.exit()
         else:
@@ -187,6 +209,13 @@ class MainScreen(Screen):
         """Handle natural-language queries via configured LLM provider."""
         self._hide_completions()
         log = self._log()
+
+        # If in setup flow, route raw input there
+        if self._setup_step > 0:
+            self._echo(event.query)
+            self._handle_setup_input(event.query)
+            return
+
         self._echo(event.query)
 
         if not self._get_llm_client().available:
@@ -597,6 +626,135 @@ class MainScreen(Screen):
 
         except Exception as exc:
             log.write(f"[bold red]Export error: {exc}[/bold red]")
+
+    # -- /setup flow --------------------------------------------------------
+
+    def _setup_command(self) -> None:
+        """Entry point for /setup — begin the interactive provider wizard."""
+        log = self._log()
+        self._setup_step = 1
+        log.write("[bold]LLM Provider Setup[/bold]\n")
+        self._show_provider_list(log)
+        log.write("Enter a number to select a provider (or [bold]cancel[/bold] to abort):")
+
+    def _show_provider_list(self, log: RichLog) -> None:
+        """Display a numbered list of available LLM providers."""
+        table = RichTable(
+            title="Available Providers",
+            show_header=True,
+            expand=False,
+            border_style="dim",
+            padding=(0, 1),
+        )
+        table.add_column("#", style="bold", no_wrap=True)
+        table.add_column("Provider", style="bold cyan", no_wrap=True)
+        table.add_column("Default Model", style="dim")
+        table.add_column("Note")
+
+        for i, (name, defaults) in enumerate(PROVIDER_DEFAULTS.items(), 1):
+            if name == "ollama":
+                note = "local — no API key needed"
+            elif name == "anthropic":
+                note = "requires anthropic extra"
+            else:
+                note = "requires API key"
+            table.add_row(str(i), name, defaults["model"] or "", note)
+
+        log.write(table)
+
+    def _handle_setup_input(self, raw: str) -> None:
+        """State machine for the /setup wizard."""
+        log = self._log()
+        text = raw.strip().lower()
+
+        if text == "cancel":
+            self._setup_step = 0
+            self._setup_provider = ""
+            log.write("[dim]Setup cancelled.[/dim]\n")
+            return
+
+        if self._setup_step == 1:
+            # Expect a number selecting the provider
+            providers = list(PROVIDER_DEFAULTS.keys())
+            try:
+                idx = int(text) - 1
+                if not (0 <= idx < len(providers)):
+                    raise ValueError
+            except ValueError:
+                log.write(
+                    f"[yellow]Enter a number 1-{len(providers)} "
+                    f"or 'cancel'.[/yellow]"
+                )
+                return
+
+            self._setup_provider = providers[idx]
+
+            if self._setup_provider == "ollama":
+                # Ollama needs no API key
+                self._write_env(self._setup_provider, None)
+                self._reset_llm_client()
+                log.write(
+                    f"[green]Provider set to [bold]{self._setup_provider}[/bold]. "
+                    f"No API key needed — make sure Ollama is running "
+                    f"on localhost:11434.[/green]\n"
+                )
+                self._setup_step = 0
+                self._setup_provider = ""
+            else:
+                self._setup_step = 2
+                log.write(
+                    f"Selected [bold]{self._setup_provider}[/bold]. "
+                    f"Enter your API key (or [bold]cancel[/bold] to abort):"
+                )
+
+        elif self._setup_step == 2:
+            # Expect the API key string
+            api_key = raw.strip()  # preserve original case
+            if not api_key:
+                log.write("[yellow]API key cannot be empty.[/yellow]")
+                return
+
+            self._write_env(self._setup_provider, api_key)
+            self._reset_llm_client()
+            log.write(
+                f"[green]Saved! Provider=[bold]{self._setup_provider}[/bold], "
+                f"API key written to .env.[/green]\n"
+            )
+            self._setup_step = 0
+            self._setup_provider = ""
+
+    def _write_env(self, provider: str, api_key: str | None) -> None:
+        """Write or update BIO_SEARCH_LLM_PROVIDER and _API_KEY in .env."""
+        env_path = Path(".env")
+        lines: list[str] = []
+        if env_path.exists():
+            lines = env_path.read_text().splitlines()
+
+        # Remove existing LLM provider/key lines, preserve everything else
+        lines = [
+            ln
+            for ln in lines
+            if not ln.strip().startswith("BIO_SEARCH_LLM_PROVIDER=")
+            and not ln.strip().startswith("BIO_SEARCH_LLM_API_KEY=")
+        ]
+
+        lines.append(f"BIO_SEARCH_LLM_PROVIDER={provider}")
+        if api_key:
+            lines.append(f"BIO_SEARCH_LLM_API_KEY={api_key}")
+
+        env_path.write_text("\n".join(lines) + "\n")
+
+    def _reset_llm_client(self) -> None:
+        """Reload settings from .env and recreate the LLM client."""
+        from bio_search.config import Settings
+
+        self.app.settings = Settings()
+        if hasattr(self, "_llm_client"):
+            del self._llm_client
+        # Pre-warm the new client
+        self._get_llm_client()
+
+    # -- LLM ---------------------------------------------------------------
 
     def _get_llm_client(self):
         """Return a cached LLMClient instance."""

@@ -17,7 +17,7 @@ Bio-Search downloads NHANES datasets directly from the CDC, runs Environment-Wid
 - **Environment-Wide Association Study (EWAS)** — Scan every exposure against an outcome with survey-weighted regression, FDR correction, and inline Manhattan plots
 - **Guided Deep-Dive** — Analyze specific exposure-outcome pairs with subgroup stratification (sex, race, age, income) and temporal trend tracking across cycles
 - **Survey Statistics Done Right** — Stratified multi-stage cluster design, MEC/interview weight selection, CDC weight adjustment for combined cycles, cluster-robust standard errors
-- **Multi-Provider LLM** — Natural language queries and manuscript generation via OpenAI, Anthropic, MiniMax, Kimi, or Qwen (fully usable without any LLM)
+- **Multi-Provider LLM** — Natural language queries and manuscript generation via OpenAI, Anthropic, MiniMax, Kimi, Qwen, or Ollama (fully usable without any LLM)
 - **Terminal-Native** — Chat-style TUI with Rich tables, inline plotext charts, slash commands, and keyboard shortcuts
 
 ## Installation
@@ -41,7 +41,7 @@ pip install -e '.[dev]'
 
 ```bash
 # Launch the TUI
-bio-search
+biosearch
 ```
 
 ### Typical Workflow
@@ -80,7 +80,8 @@ bio-search
 | `/guided <exposure> <outcome>` | Guided deep-dive analysis |
 | `/info <variable>` | Show variable metadata |
 | `/search <query>` | Search variables by name or label |
-| `/export <format>` | Export results (CSV, JSON, XLSX) |
+| `/export <format>` | Export results (csv, json, report, figures) |
+| `/setup` | Configure LLM provider and API key |
 | `/clear` | Clear the chat log |
 | `/help` | Show all commands |
 | `/quit` | Exit |
@@ -104,7 +105,7 @@ Copy `.env.example` to `.env` and configure:
 # Data storage directory
 BIO_SEARCH_DATA_DIR=./data
 
-# LLM provider: openai, anthropic, minimax, kimi, qwen
+# LLM provider: openai, anthropic, minimax, kimi, qwen, ollama
 BIO_SEARCH_LLM_PROVIDER=openai
 BIO_SEARCH_LLM_API_KEY=sk-...
 
